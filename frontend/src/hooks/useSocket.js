@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { io } from 'socket.io-client';
-import { getSocketUrl } from '../config/env.js';
+import { getSharedSocket } from '../lib/socket.js';
 
 export const useSocket = ({ enabled, onCommandCreated, onReportProcessed }) => {
   const [isConnected, setIsConnected] = useState(false);
@@ -21,11 +20,7 @@ export const useSocket = ({ enabled, onCommandCreated, onReportProcessed }) => {
       return undefined;
     }
 
-    const socket = io(getSocketUrl(), {
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-      path: '/socket.io',
-    });
+    const socket = getSharedSocket();
 
     const handleConnect = () => setIsConnected(true);
     const handleDisconnect = () => setIsConnected(false);
@@ -39,6 +34,8 @@ export const useSocket = ({ enabled, onCommandCreated, onReportProcessed }) => {
 
     if (socket.connected) {
       setIsConnected(true);
+    } else if (!socket.active) {
+      socket.connect();
     }
 
     return () => {
@@ -46,8 +43,6 @@ export const useSocket = ({ enabled, onCommandCreated, onReportProcessed }) => {
       socket.off('disconnect', handleDisconnect);
       socket.off('command:created', handleCommandCreated);
       socket.off('report:processed', handleReportProcessed);
-      socket.disconnect();
-      setIsConnected(false);
     };
   }, [enabled]);
 

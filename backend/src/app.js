@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import { xss } from 'express-xss-sanitizer';
 import { StatusCodes } from 'http-status-codes';
 import { env } from './config/env.js';
+import { isAllowedOrigin } from './config/corsOrigins.js';
 import { doubleCsrfProtection, generateCsrfToken } from './config/csrf.js';
 import { requestContextMiddleware } from './middlewares/requestContext.js';
 import { ensureDatabaseMiddleware } from './middlewares/ensureDatabase.js';
@@ -42,9 +43,7 @@ app.use(requestContextMiddleware);
 app.use(
   cors({
     origin: (origin, callback) => {
-      const allowedOrigin = env.FRONTEND_URL.replace(/\/$/, '');
-
-      if (!origin || origin.replace(/\/$/, '') === allowedOrigin) {
+      if (isAllowedOrigin(origin)) {
         callback(null, true);
         return;
       }

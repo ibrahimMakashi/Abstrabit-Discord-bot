@@ -17,6 +17,7 @@ const ignoreBenignProxyErrors = (proxy) => {
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: true,
     port: 5173,
     proxy: {
       '/api': {
