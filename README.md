@@ -187,11 +187,13 @@ In your server:
 
 **Frontend** — [`frontend/.env.example`](frontend/.env.example).
 
-**Production extras:**
+**Production extras (Vercel backend + separate frontend):**
 
-- `COOKIE_SECURE=true`
-- `FRONTEND_URL=https://your-vercel-app.vercel.app`
 - `NODE_ENV=production`
+- `COOKIE_SECURE=true`
+- `COOKIE_SAME_SITE=none`
+- `FRONTEND_URL=https://your-frontend.vercel.app` (exact origin, no trailing slash)
+- `MONGODB_URI` set in Vercel env (not only in local `.env`)
 
 ---
 
@@ -199,7 +201,23 @@ In your server:
 
 One GitHub repo; **two hosts**.
 
-### Backend — Render
+### Backend — Vercel (current setup)
+
+1. Import repo → **Root Directory:** `backend`
+2. Vercel uses `backend/vercel.json` and `backend/index.js` (serverless Express handler).
+3. Set all variables from `backend/.env.example` in the Vercel project **Environment Variables**.
+4. **MongoDB Atlas → Network Access → allow `0.0.0.0/0`** (fixes `admins.findOne() buffering timed out`).
+5. Interactions URL:
+
+```text
+https://abstrabit-discord-bot.vercel.app/api/interactions
+```
+
+6. Redeploy after changing env vars.
+
+**Check:** open `https://your-backend.vercel.app/health` — `databaseConnected` should be `true`.
+
+### Backend — Render (alternative, better for Socket.io + cron)
 
 1. New **Web Service** → connect repo.
 2. **Root Directory:** `backend`
@@ -234,8 +252,20 @@ Socket.io connects to the same backend host automatically (or set `VITE_SOCKET_U
 ### MongoDB Atlas
 
 - Free M0 cluster
-- Database user + IP allowlist (or `0.0.0.0/0` for Render’s dynamic IPs during assessment)
-- `MONGODB_URI` on Render
+- Database user with read/write access
+- **Network Access → `0.0.0.0/0`** (required for Vercel/Render dynamic IPs)
+- `MONGODB_URI` on your backend host
+
+---
+
+## Troubleshooting production login
+
+| Error | Fix |
+|-------|-----|
+| `MongooseError: ... buffering timed out` | Atlas IP allowlist `0.0.0.0/0`; confirm `MONGODB_URI` in Vercel env; redeploy |
+| `/health` shows `databaseConnected: false` | Same as above |
+| Login succeeds but session lost | Set `COOKIE_SAME_SITE=none`, `COOKIE_SECURE=true`, `FRONTEND_URL` = exact frontend URL |
+| CORS error in browser | `FRONTEND_URL` must match the site you open (scheme + host) |
 
 ---
 

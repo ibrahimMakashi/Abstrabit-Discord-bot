@@ -14,6 +14,7 @@ const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   COOKIE_DOMAIN: z.string().optional(),
   COOKIE_SECURE: z.coerce.boolean().default(false),
+  COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).optional(),
   CSRF_SECRET: z.string().min(16).default('change-me-csrf-secret'),
   ENCRYPTION_KEY: z.string().min(32).default('change-me-field-encryption-key-32chars'),
   DISCORD_PUBLIC_KEY: z.string().optional(),

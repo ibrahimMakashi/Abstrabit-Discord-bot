@@ -9,13 +9,16 @@ import { doubleCsrf } from 'csrf-csrf';
 import { StatusCodes } from 'http-status-codes';
 import { env } from './config/env.js';
 import { requestContextMiddleware } from './middlewares/requestContext.js';
+import { ensureDatabaseMiddleware } from './middlewares/ensureDatabase.js';
 import { mongoSanitizeMiddleware } from './middlewares/mongoSanitize.js';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
 import apiRoutes from './routes/index.js';
 import interactionRoutes from './routes/interactionRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import { apiResponse } from './utils/apiResponse.js';
+import { isDatabaseConnected } from './database/mongoose.js';
 import { requireAuth, requireRole } from './middlewares/auth.js';
+import { csrfCookieOptions } from './utils/cookie.js';
 
 const app = express();
 
@@ -27,12 +30,7 @@ const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
   // Must not use req.user here — CSRF middleware runs before route-level requireAuth.
   getSessionIdentifier: getCsrfSessionIdentifier,
   cookieName: 'csrf-token',
-  cookieOptions: {
-    httpOnly: false,
-    sameSite: env.NODE_ENV === 'production' ? 'strict' : 'lax',
-    secure: env.COOKIE_SECURE || env.NODE_ENV === 'production',
-    path: '/',
-  },
+  cookieOptions: csrfCookieOptions,
   size: 64,
   ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
   getCsrfTokenFromRequest: (req) => req.headers['x-csrf-token'],
@@ -46,6 +44,8 @@ const limiter = rateLimit({
 });
 
 app.set('trust proxy', 1);
+
+app.use(ensureDatabaseMiddleware);
 
 // Discord interactions must be registered before body parsers and sanitizers.
 app.use('/api/interactions', express.raw({ type: 'application/json' }));
@@ -73,6 +73,7 @@ app.get('/health', (req, res) =>
       message: 'Service healthy',
       data: {
         uptime: process.uptime(),
+        databaseConnected: isDatabaseConnected(),
       },
     }),
   ),
