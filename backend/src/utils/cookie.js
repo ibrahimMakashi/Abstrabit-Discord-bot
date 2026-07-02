@@ -3,8 +3,18 @@ import { env, isProduction } from '../config/env.js';
 const accessMaxAge = 15 * 60 * 1000;
 const refreshMaxAge = 7 * 24 * 60 * 60 * 1000;
 
-/** Cross-origin frontend + API on Vercel needs SameSite=None + Secure. */
-export const getCookieSameSite = () => env.COOKIE_SAME_SITE || (isProduction ? 'none' : 'lax');
+/** Cross-origin SPA + API needs SameSite=None when cookies are Secure. */
+export const getCookieSameSite = () => {
+  if (env.COOKIE_SAME_SITE) {
+    return env.COOKIE_SAME_SITE;
+  }
+
+  if (env.COOKIE_SECURE || isProduction) {
+    return 'none';
+  }
+
+  return 'lax';
+};
 
 const baseCookieOptions = {
   httpOnly: true,

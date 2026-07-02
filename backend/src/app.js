@@ -5,9 +5,9 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { xss } from 'express-xss-sanitizer';
-import { doubleCsrf } from 'csrf-csrf';
 import { StatusCodes } from 'http-status-codes';
 import { env } from './config/env.js';
+import { doubleCsrfProtection, generateCsrfToken } from './config/csrf.js';
 import { requestContextMiddleware } from './middlewares/requestContext.js';
 import { ensureDatabaseMiddleware } from './middlewares/ensureDatabase.js';
 import { mongoSanitizeMiddleware } from './middlewares/mongoSanitize.js';
@@ -18,23 +18,8 @@ import authRoutes from './routes/authRoutes.js';
 import { apiResponse } from './utils/apiResponse.js';
 import { getDatabaseStatus } from './database/mongoose.js';
 import { requireAuth, requireRole } from './middlewares/auth.js';
-import { csrfCookieOptions } from './utils/cookie.js';
 
 const app = express();
-
-const getCsrfSessionIdentifier = (req) =>
-  req.cookies.accessToken || req.cookies.refreshToken || 'anonymous';
-
-const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
-  getSecret: () => env.CSRF_SECRET,
-  // Must not use req.user here — CSRF middleware runs before route-level requireAuth.
-  getSessionIdentifier: getCsrfSessionIdentifier,
-  cookieName: 'csrf-token',
-  cookieOptions: csrfCookieOptions,
-  size: 64,
-  ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
-  getCsrfTokenFromRequest: (req) => req.headers['x-csrf-token'],
-});
 
 const limiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
@@ -54,7 +39,16 @@ app.use('/api/interactions', interactionRoutes);
 app.use(requestContextMiddleware);
 app.use(
   cors({
-    origin: env.FRONTEND_URL,
+    origin: (origin, callback) => {
+      const allowedOrigin = env.FRONTEND_URL.replace(/\/$/, '');
+
+      if (!origin || origin.replace(/\/$/, '') === allowedOrigin) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   }),
 );

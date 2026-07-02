@@ -1,6 +1,7 @@
 import { StatusCodes } from 'http-status-codes';
 import { apiResponse } from '../utils/apiResponse.js';
 import { accessCookieOptions, clearCookieOptions, refreshCookieOptions } from '../utils/cookie.js';
+import { generateCsrfToken } from '../config/csrf.js';
 import {
   getSessionAdmin,
   loginAdmin,
@@ -46,7 +47,10 @@ export const login = async (req, res) => {
   return res.json(
     apiResponse({
       message: 'Login successful',
-      data: session.admin,
+      data: {
+        ...session.admin,
+        csrfToken: generateCsrfToken(req, res),
+      },
     }),
   );
 };
@@ -60,7 +64,10 @@ export const refresh = async (req, res) => {
   return res.json(
     apiResponse({
       message: 'Session refreshed',
-      data: session.admin,
+      data: {
+        ...session.admin,
+        csrfToken: generateCsrfToken(req, res),
+      },
     }),
   );
 };
