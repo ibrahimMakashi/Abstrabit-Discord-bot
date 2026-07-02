@@ -14,6 +14,7 @@ export const useSocket = ({ enabled, onCommandCreated, onReportProcessed }) => {
     const socket = io(getSocketUrl(), {
       withCredentials: true,
       transports: ['websocket', 'polling'],
+      path: '/socket.io',
     });
 
     const handleConnect = () => setIsConnected(true);

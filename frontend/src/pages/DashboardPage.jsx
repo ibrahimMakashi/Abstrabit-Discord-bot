@@ -20,6 +20,7 @@ import GlassCard from '../components/GlassCard';
 import PastelStatCard from '../components/PastelStatCard';
 import ActivityCard from '../components/ActivityCard';
 import StatusChip from '../components/StatusChip';
+import RealtimeStatusBadge from '../components/RealtimeStatusBadge';
 import EmptyState from '../components/EmptyState';
 import ErrorState from '../components/ErrorState';
 import { pastels, brand } from '../constants/colors';
@@ -33,12 +34,18 @@ const statTones = [pastels.mint, pastels.yellow, pastels.lavender, pastels.pink]
 const DashboardPage = () => {
   const [state, setState] = useState({ data: null, loading: true, error: '' });
 
-  const loadDashboard = useCallback(async () => {
+  const loadDashboard = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setState((current) => ({ ...current, loading: true, error: '' }));
+    }
+
     try {
       const response = await getDashboardSummary();
       setState({ data: response.data, loading: false, error: '' });
     } catch (error) {
-      setState({ data: null, loading: false, error: error.message || 'Failed to load dashboard' });
+      if (!silent) {
+        setState({ data: null, loading: false, error: error.message || 'Failed to load dashboard' });
+      }
     }
   }, []);
 
@@ -46,10 +53,14 @@ const DashboardPage = () => {
     loadDashboard();
   }, [loadDashboard]);
 
-  useSocket({
+  const handleRealtimeUpdate = useCallback(() => {
+    loadDashboard({ silent: true });
+  }, [loadDashboard]);
+
+  const { isConnected } = useSocket({
     enabled: true,
-    onCommandCreated: () => loadDashboard(),
-    onReportProcessed: () => loadDashboard(),
+    onCommandCreated: handleRealtimeUpdate,
+    onReportProcessed: handleRealtimeUpdate,
   });
 
   const stats = useMemo(() => {
@@ -124,6 +135,12 @@ const DashboardPage = () => {
 
   return (
     <Stack spacing={2.5}>
+      <PageHeader
+        title="Dashboard"
+        description="Live overview of commands, activity, and system health. Updates automatically when new slash commands run."
+        action={<RealtimeStatusBadge connected={isConnected} />}
+      />
+
       <Grid container spacing={{ xs: 1.5, md: 2 }}>
         <Grid size={{ xs: 12, lg: 8 }}>
           <Stack spacing={2.5}>
@@ -195,7 +212,10 @@ const DashboardPage = () => {
 
             <GlassCard>
               <Stack spacing={1.5}>
-                <PageHeader title="Recent activity" description="Latest slash command executions." />
+                <PageHeader
+                  title="Recent activity"
+                  description="Latest slash command executions — refreshes in real time."
+                />
                 {state.data.recentActivity.length ? (
                   <Box sx={{ width: '100%', overflowX: 'auto' }}>
                     <Table size="small" sx={{ minWidth: 520 }}>

@@ -2,10 +2,25 @@ import { Server } from 'socket.io';
 
 let ioInstance = null;
 
-export const initializeSocket = (server, corsOrigin) => {
+import { env } from '../config/env.js';
+
+let ioInstance = null;
+
+const getAllowedSocketOrigin = () => env.FRONTEND_URL.replace(/\/$/, '');
+
+export const initializeSocket = (server) => {
   ioInstance = new Server(server, {
     cors: {
-      origin: corsOrigin,
+      origin: (origin, callback) => {
+        const allowedOrigin = getAllowedSocketOrigin();
+
+        if (!origin || origin.replace(/\/$/, '') === allowedOrigin) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new Error(`Socket CORS blocked for origin: ${origin}`));
+      },
       credentials: true,
     },
   });

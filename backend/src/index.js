@@ -24,7 +24,7 @@ const bootstrap = async () => {
   }
 
   const server = http.createServer(app);
-  initializeSocket(server, env.FRONTEND_URL);
+  initializeSocket(server);
   startRetryQueueJob();
 
   server.listen(env.PORT, () => {
