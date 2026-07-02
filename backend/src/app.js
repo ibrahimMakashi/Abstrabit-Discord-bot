@@ -21,6 +21,8 @@ import { requireAuth, requireRole } from './middlewares/auth.js';
 
 const app = express();
 
+app.set('etag', false);
+
 const limiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
   max: env.RATE_LIMIT_MAX,
@@ -60,6 +62,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitizeMiddleware());
 app.use(xss());
 app.use(limiter);
+
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  next();
+});
 
 app.get('/health', async (req, res) => {
   const database = await getDatabaseStatus();

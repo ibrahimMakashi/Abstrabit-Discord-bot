@@ -146,6 +146,8 @@ export const interactionsController = async (req, res) => {
       mirrorStatus: 'pending',
     });
 
+    emitSocketEvent('command:created', command);
+
     res.json(buildDiscordReply(immediateReply));
     queueReportProcessing({ command, reportText, settings });
     return undefined;

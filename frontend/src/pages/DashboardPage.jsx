@@ -40,7 +40,7 @@ const DashboardPage = () => {
     }
 
     try {
-      const response = await getDashboardSummary();
+      const response = await getDashboardSummary({ bustCache: silent });
       setState({ data: response.data, loading: false, error: '' });
     } catch (error) {
       if (!silent) {

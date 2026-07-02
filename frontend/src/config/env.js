@@ -10,6 +10,11 @@ export const getSocketUrl = () => {
     return socketUrl;
   }
 
+  // In dev, use the Vite origin so /socket.io is proxied to the backend.
+  if (import.meta.env.DEV && typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+
   if (API_BASE_URL.startsWith('http')) {
     return API_BASE_URL.replace(/\/api\/?$/, '');
   }

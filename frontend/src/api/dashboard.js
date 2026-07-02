@@ -1,7 +1,10 @@
 import { apiClient } from './client';
 
-export const getDashboardSummary = async () => {
-  const response = await apiClient.get('/dashboard/summary');
+export const getDashboardSummary = async ({ bustCache = false } = {}) => {
+  const response = await apiClient.get('/dashboard/summary', {
+    params: bustCache ? { _t: Date.now() } : undefined,
+    headers: bustCache ? { 'Cache-Control': 'no-cache', Pragma: 'no-cache' } : undefined,
+  });
   return response.data;
 };
 

@@ -34,8 +34,24 @@ export const initializeSocket = (server) => {
 
 export const getSocket = () => ioInstance;
 
+const serializePayload = (payload) => {
+  if (!payload) {
+    return payload;
+  }
+
+  if (typeof payload.toObject === 'function') {
+    return payload.toObject();
+  }
+
+  if (typeof payload.toJSON === 'function') {
+    return payload.toJSON();
+  }
+
+  return payload;
+};
+
 export const emitSocketEvent = (event, payload) => {
   if (ioInstance) {
-    ioInstance.emit(event, payload);
+    ioInstance.emit(event, serializePayload(payload));
   }
 };
