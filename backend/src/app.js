@@ -16,7 +16,7 @@ import apiRoutes from './routes/index.js';
 import interactionRoutes from './routes/interactionRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import { apiResponse } from './utils/apiResponse.js';
-import { isDatabaseConnected } from './database/mongoose.js';
+import { getDatabaseStatus } from './database/mongoose.js';
 import { requireAuth, requireRole } from './middlewares/auth.js';
 import { csrfCookieOptions } from './utils/cookie.js';
 
@@ -67,17 +67,21 @@ app.use(mongoSanitizeMiddleware());
 app.use(xss());
 app.use(limiter);
 
-app.get('/health', (req, res) =>
-  res.json(
+app.get('/health', async (req, res) => {
+  const database = await getDatabaseStatus();
+
+  res.status(database.connected ? 200 : 503).json(
     apiResponse({
-      message: 'Service healthy',
+      message: database.connected ? 'Service healthy' : 'Database unavailable',
       data: {
         uptime: process.uptime(),
-        databaseConnected: isDatabaseConnected(),
+        databaseConnected: database.connected,
+        databaseReadyState: database.readyState,
+        ...(database.error ? { databaseError: database.error } : {}),
       },
     }),
-  ),
-);
+  );
+});
 
 app.get('/api/csrf-token', requireAuth, requireRole('admin'), (req, res) => {
   res.status(StatusCodes.OK).json(

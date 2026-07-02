@@ -1,11 +1,14 @@
+/**
+ * Local development entry (Render, nodemon). Vercel uses api/index.js instead.
+ */
 import http from 'node:http';
-import app from './app.js';
-import { env } from './config/env.js';
-import { logger } from './config/logger.js';
-import { connectDatabase } from './database/mongoose.js';
-import { initializeSocket } from './socket/index.js';
-import { startRetryQueueJob } from './jobs/retryQueueJob.js';
-import { registerDiscordCommands } from './services/discordService.js';
+import app from './src/app.js';
+import { env } from './src/config/env.js';
+import { logger } from './src/config/logger.js';
+import { connectDatabase } from './src/database/mongoose.js';
+import { initializeSocket } from './src/socket/index.js';
+import { startRetryQueueJob } from './src/jobs/retryQueueJob.js';
+import { registerDiscordCommands } from './src/services/discordService.js';
 
 const bootstrap = async () => {
   await connectDatabase();
