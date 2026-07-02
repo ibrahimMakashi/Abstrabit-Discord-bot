@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
+import { getSocketUrl } from '../config/env.js';
 
 export const useSocket = ({ enabled, onCommandCreated, onReportProcessed }) => {
   const [isConnected, setIsConnected] = useState(false);
@@ -10,7 +11,7 @@ export const useSocket = ({ enabled, onCommandCreated, onReportProcessed }) => {
       return undefined;
     }
 
-    const socket = io('/', {
+    const socket = io(getSocketUrl(), {
       withCredentials: true,
       transports: ['websocket', 'polling'],
     });

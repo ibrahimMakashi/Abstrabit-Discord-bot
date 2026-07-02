@@ -219,13 +219,15 @@ Or use [`render.yaml`](render.yaml) as a starting point.
 1. Import repo → **Root Directory:** `frontend`
 2. **Build:** `npm run build`
 3. **Output:** `dist`
-4. Environment variable:
+4. Environment variable (required when API is on a different host):
 
 ```text
-VITE_API_BASE_URL=https://<your-render-service>.onrender.com/api
+VITE_API_BASE_URL=https://abstrabit-discord-bot.vercel.app/api
 ```
 
-5. Update backend `FRONTEND_URL` to your Vercel URL.
+Socket.io connects to the same backend host automatically (or set `VITE_SOCKET_URL` explicitly).
+
+5. Update backend `FRONTEND_URL` to your new frontend Vercel URL.
 
 `frontend/vercel.json` rewrites SPA routes for React Router.
 
