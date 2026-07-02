@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: discord-bot-dashboard-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    plan: starter
+    autoDeploy: true
