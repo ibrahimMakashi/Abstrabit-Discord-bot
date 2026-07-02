@@ -93,21 +93,60 @@ Optional: `OPENAI_API_KEY` for AI enrichment. Optional: Cloudinary vars for prof
 
 **Not in `.env`:** main channel ID, mirror channel ID, and mirror webhook — admins enter these in **Settings** after login (stored encrypted in the database).
 
-### 3. Frontend environment (optional)
+### 3. Frontend environment
 
 ```bash
 cd frontend
 cp .env.example .env
 ```
 
-For local dev, Vite already proxies `/api` and `/socket.io` to `http://localhost:5000` (see `frontend/vite.config.js`). You can leave `VITE_API_BASE_URL=http://localhost:5000/api` or omit `.env` entirely.
+#### Recommended: local frontend + deployed Render backend
+
+Discord only POSTs interactions to your **public** interactions URL. Your laptop (`localhost:5000`) does **not** receive Discord requests unless you run **ngrok** and change the URL in the Developer Portal.
+
+For everyday local UI work, point the frontend at the **deployed backend**:
+
+```env
+# frontend/.env
+VITE_API_BASE_URL=https://abstrabit-discord-bot.onrender.com/api
+VITE_SOCKET_URL=https://abstrabit-discord-bot.onrender.com
+```
+
+On **Render** (backend service → Environment), add:
+
+```text
+SOCKET_EXTRA_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
+
+(`FRONTEND_URL` should stay your production Vercel dashboard URL.)
+
+Then you only need the frontend locally:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Open **http://localhost:5173** — API, Socket.io, and Discord commands all go through **Render** + shared MongoDB. Live dashboard updates work like production.
+
+#### Alternative: full local stack (backend + ngrok)
+
+Use this only when changing **backend** code:
+
+1. Start local backend (`cd backend && npm run dev`).
+2. Run `ngrok http 5000` and set Discord **Interactions Endpoint URL** to `https://<ngrok-host>/api/interactions`.
+3. In `frontend/.env` use `VITE_API_BASE_URL=/api` (Vite proxies to `localhost:5000`).
+
+See steps 5–6 below for ngrok details.
 
 ### 4. Start MongoDB
 
 - **Atlas:** allow your IP in Network Access; use the connection string in `MONGODB_URI`.
 - **Local:** ensure `mongod` is running if using `mongodb://127.0.0.1:27017/...`.
 
-### 5. Start the backend
+### 5. Start the backend (full local stack only)
+
+Skip this if you use the **deployed Render backend** (recommended above).
 
 ```bash
 cd backend
@@ -116,7 +155,7 @@ npm run dev
 
 Backend listens on **http://localhost:5000**. On startup it registers `/report` and `/status` with Discord (if bot credentials are set).
 
-### 6. Expose interactions endpoint (local Discord testing)
+### 6. Expose interactions endpoint (full local stack only)
 
 In a **second terminal**:
 
@@ -197,11 +236,43 @@ In your server:
 
 ---
 
+## Local development note
+
+**Discord cannot reach `localhost`.** The interactions URL in the Developer Portal must be a public HTTPS URL (e.g. `https://abstrabit-discord-bot.onrender.com/api/interactions`).
+
+- **Recommended:** run only `frontend` locally with `VITE_API_BASE_URL` and `VITE_SOCKET_URL` pointing at Render (see `frontend/.env.example`).
+- **Full local backend:** requires ngrok and temporarily changing the Discord interactions URL.
+
+---
+
 ## Deployment
 
 One GitHub repo; **two hosts**.
 
-### Backend — Vercel (current setup)
+### Backend — Render (recommended)
+
+Deployed API: **https://abstrabit-discord-bot.onrender.com**
+
+1. New **Web Service** → connect repo.
+2. **Root Directory:** `backend`
+3. **Build:** `npm install`
+4. **Start:** `npm start`
+5. Set all variables from `backend/.env.example` in Render dashboard.
+6. For **local frontend** dev, also set:
+
+```text
+SOCKET_EXTRA_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
+
+7. Interactions URL (Discord Developer Portal):
+
+```text
+https://abstrabit-discord-bot.onrender.com/api/interactions
+```
+
+Or use [`render.yaml`](render.yaml) as a starting point.
+
+### Backend — Vercel (alternative; Socket.io limited on serverless)
 
 1. Import repo → **Root Directory:** `backend`
 2. Vercel uses `backend/vercel.json` and `backend/index.js` (serverless Express handler).
@@ -217,35 +288,19 @@ https://abstrabit-discord-bot.vercel.app/api/interactions
 
 **Check:** open `https://your-backend.vercel.app/health` — `databaseConnected` should be `true`.
 
-### Backend — Render (alternative, better for Socket.io + cron)
-
-1. New **Web Service** → connect repo.
-2. **Root Directory:** `backend`
-3. **Build:** `npm install`
-4. **Start:** `npm start`
-5. Set all variables from `backend/.env.example` in Render dashboard.
-6. Interactions URL:
-
-```text
-https://<your-render-service>.onrender.com/api/interactions
-```
-
-Or use [`render.yaml`](render.yaml) as a starting point.
-
 ### Frontend — Vercel
 
 1. Import repo → **Root Directory:** `frontend`
 2. **Build:** `npm run build`
 3. **Output:** `dist`
-4. Environment variable (required when API is on a different host):
+4. Environment variables:
 
 ```text
-VITE_API_BASE_URL=https://abstrabit-discord-bot.vercel.app/api
+VITE_API_BASE_URL=https://abstrabit-discord-bot.onrender.com/api
+VITE_SOCKET_URL=https://abstrabit-discord-bot.onrender.com
 ```
 
-Socket.io connects to the same backend host automatically (or set `VITE_SOCKET_URL` explicitly).
-
-5. Update backend `FRONTEND_URL` to your new frontend Vercel URL.
+5. Update Render `FRONTEND_URL` to your Vercel dashboard URL (exact origin, no trailing slash).
 
 `frontend/vercel.json` rewrites SPA routes for React Router.
 
@@ -266,6 +321,7 @@ Socket.io connects to the same backend host automatically (or set `VITE_SOCKET_U
 | `/health` shows `databaseConnected: false` | Same as above |
 | Login succeeds but session lost | Set `COOKIE_SAME_SITE=none`, `COOKIE_SECURE=true`, `FRONTEND_URL` = exact frontend URL |
 | CORS error in browser | `FRONTEND_URL` must match the site you open (scheme + host) |
+| Local dashboard not live-updating | Use deployed Render URL in `frontend/.env`; set `SOCKET_EXTRA_ORIGINS` on Render for `localhost:5173` |
 
 ---
 
@@ -276,7 +332,7 @@ Socket.io connects to the same backend host automatically (or set `VITE_SOCKET_U
 | Item | Value |
 |------|--------|
 | **Live dashboard** | `https://YOUR-FRONTEND.vercel.app` |
-| **API / interactions** | `https://YOUR-BACKEND.onrender.com/api/interactions` |
+| **API / interactions** | `https://abstrabit-discord-bot.onrender.com/api/interactions` |
 
 **No shared test account is provided.** The app has a public **Register** flow — create your own admin account at `/register`, then log in.
 

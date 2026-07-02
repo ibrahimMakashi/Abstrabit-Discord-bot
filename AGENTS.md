@@ -12,6 +12,10 @@ Discord slash-command bot + admin dashboard: verify signed interactions, handle 
 - **Backend:** `backend/` — Express 5, MongoDB/Mongoose, JWT cookies, CSRF, Socket.io, `discord-interactions`
 - **Deploy:** Vercel (frontend root), Render (backend root), MongoDB Atlas
 
+## Local development
+
+Discord interactions go to the **public Render URL** — not `localhost`. For local UI work, set `frontend/.env` to the deployed backend (`VITE_API_BASE_URL` + `VITE_SOCKET_URL` → `https://abstrabit-discord-bot.onrender.com`). See `frontend/.env.example` and README.
+
 ## Architecture rules
 
 1. **Discord interactions** must be verified with Ed25519 (`verifyKeyMiddleware`) before JSON body parsers run.
