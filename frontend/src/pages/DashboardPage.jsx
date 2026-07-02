@@ -26,7 +26,7 @@ import ErrorState from '../components/ErrorState';
 import { pastels, brand } from '../constants/colors';
 import { getDashboardSummary } from '../api/dashboard';
 import { formatDateTime } from '../utils/formatters';
-import { useSocket } from '../hooks/useSocket';
+import { useRealtimeRefresh } from '../hooks/useRealtimeRefresh';
 
 const activityTones = [pastels.mint, pastels.pink, pastels.lavender, pastels.sky];
 const statTones = [pastels.mint, pastels.yellow, pastels.lavender, pastels.pink];
@@ -57,10 +57,9 @@ const DashboardPage = () => {
     loadDashboard({ silent: true });
   }, [loadDashboard]);
 
-  const { isConnected } = useSocket({
+  const { isConnected } = useRealtimeRefresh({
     enabled: true,
-    onCommandCreated: handleRealtimeUpdate,
-    onReportProcessed: handleRealtimeUpdate,
+    onRefresh: handleRealtimeUpdate,
   });
 
   const stats = useMemo(() => {

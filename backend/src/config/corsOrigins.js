@@ -8,6 +8,10 @@ const DEVELOPMENT_ORIGINS = new Set([
   'http://[::1]:5173',
 ]);
 
+const extraOrigins = env.SOCKET_EXTRA_ORIGINS.split(',')
+  .map((origin) => normalizeOrigin(origin.trim()))
+  .filter(Boolean);
+
 export const getFrontendOrigin = () => normalizeOrigin(env.FRONTEND_URL);
 
 export const isAllowedOrigin = (origin) => {
@@ -18,6 +22,10 @@ export const isAllowedOrigin = (origin) => {
   const normalized = normalizeOrigin(origin);
 
   if (normalized === getFrontendOrigin()) {
+    return true;
+  }
+
+  if (extraOrigins.includes(normalized)) {
     return true;
   }
 

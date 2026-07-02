@@ -30,6 +30,7 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(15 * 60 * 1000),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(200),
   INTERACTION_MAX_AGE_MS: z.coerce.number().int().positive().default(5 * 60 * 1000),
+  SOCKET_EXTRA_ORIGINS: z.string().optional().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);

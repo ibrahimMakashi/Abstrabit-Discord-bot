@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { getSharedSocket } from '../lib/socket.js';
+import { subscribeSocketConnection, subscribeSocketEvent } from '../lib/socket.js';
 
 export const useSocket = ({ enabled, onCommandCreated, onReportProcessed }) => {
   const [isConnected, setIsConnected] = useState(false);
@@ -20,29 +20,18 @@ export const useSocket = ({ enabled, onCommandCreated, onReportProcessed }) => {
       return undefined;
     }
 
-    const socket = getSharedSocket();
-
-    const handleConnect = () => setIsConnected(true);
-    const handleDisconnect = () => setIsConnected(false);
-    const handleCommandCreated = (payload) => onCommandCreatedRef.current?.(payload);
-    const handleReportProcessed = (payload) => onReportProcessedRef.current?.(payload);
-
-    socket.on('connect', handleConnect);
-    socket.on('disconnect', handleDisconnect);
-    socket.on('command:created', handleCommandCreated);
-    socket.on('report:processed', handleReportProcessed);
-
-    if (socket.connected) {
-      setIsConnected(true);
-    } else if (!socket.active) {
-      socket.connect();
-    }
+    const unsubscribeConnection = subscribeSocketConnection(setIsConnected);
+    const unsubscribeCommand = subscribeSocketEvent('command:created', (payload) => {
+      onCommandCreatedRef.current?.(payload);
+    });
+    const unsubscribeReport = subscribeSocketEvent('report:processed', (payload) => {
+      onReportProcessedRef.current?.(payload);
+    });
 
     return () => {
-      socket.off('connect', handleConnect);
-      socket.off('disconnect', handleDisconnect);
-      socket.off('command:created', handleCommandCreated);
-      socket.off('report:processed', handleReportProcessed);
+      unsubscribeConnection();
+      unsubscribeCommand();
+      unsubscribeReport();
     };
   }, [enabled]);
 

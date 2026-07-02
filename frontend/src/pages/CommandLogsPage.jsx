@@ -10,7 +10,7 @@ import RealtimeStatusBadge from '../components/RealtimeStatusBadge';
 import { pastels } from '../constants/colors';
 import { getCommandLogs } from '../api/commands';
 import { formatDateTime, formatDuration } from '../utils/formatters';
-import { useSocket } from '../hooks/useSocket';
+import { useRealtimeRefresh } from '../hooks/useRealtimeRefresh';
 
 const CommandLogsPage = () => {
   const [searchParams] = useSearchParams();
@@ -38,6 +38,7 @@ const CommandLogsPage = () => {
           commandType,
           sortBy: sortModel[0]?.field || 'createdAt',
           sortOrder: sortModel[0]?.sort || 'desc',
+          bustCache: silent,
         });
 
         setState({
@@ -62,10 +63,9 @@ const CommandLogsPage = () => {
     loadLogs({ silent: true });
   }, [loadLogs]);
 
-  const { isConnected } = useSocket({
+  const { isConnected } = useRealtimeRefresh({
     enabled: true,
-    onCommandCreated: handleRealtimeUpdate,
-    onReportProcessed: handleRealtimeUpdate,
+    onRefresh: handleRealtimeUpdate,
   });
 
   useEffect(() => {
