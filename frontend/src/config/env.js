@@ -10,15 +10,12 @@ export const getSocketUrl = () => {
     return socketUrl;
   }
 
-  // In dev, use the Vite origin so /socket.io is proxied to the backend.
-  if (import.meta.env.DEV && typeof window !== 'undefined') {
-    return window.location.origin;
-  }
-
+  // When API points at a full backend URL, connect socket there directly (avoids Vite ws proxy).
   if (API_BASE_URL.startsWith('http')) {
     return API_BASE_URL.replace(/\/api\/?$/, '');
   }
 
+  // Relative API URL (e.g. /api) — use Vite origin; /socket.io is proxied in vite.config.js.
   if (typeof window !== 'undefined') {
     return window.location.origin;
   }
